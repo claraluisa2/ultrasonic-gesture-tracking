@@ -20,8 +20,8 @@ from matplotlib.patches import Rectangle
 PORTA = "COM4"
 BAUDRATE = 115200
 JANELA_S = 4.0        # quantos segundos de histórico mostrar
-LIM_CM = (0, 40)      # alcance útil dos sensores
-AREA_UTIL = (10, 30)  # caixa tracejada onde o gesto deve acontecer (cm)
+LIM_CM = (0, 100)      # alcance útil dos sensores
+AREA_UTIL = (40, 60)  # caixa tracejada onde o gesto deve acontecer (cm)
 
 
 def interpretar(linha):

@@ -11,8 +11,8 @@
 // Alcance útil ~40 cm. Eco que demora mais que isso vira "leitura inválida" (-1),
 // o que descarta paredes e objetos de fundo em vez de tratá-los como gesto.
 #define DIST_MIN_CM 2.0f
-#define DIST_MAX_CM 40.0f
-#define TIMEOUT_US 2500UL  // ida e volta de ~43 cm
+#define DIST_MAX_CM 100.0f
+#define TIMEOUT_US 6000UL // ida e volta de ~43 cm
 
 #define PERIODO_MS 70           // uma amostra completa (d1 e d2) a cada 70 ms (~14 Hz)
 #define INTERVALO_SENSORES_MS 30  // deixa o eco de um sensor morrer antes de disparar o outro
