@@ -8,7 +8,7 @@ PASTA_DADOS = Path(__file__).resolve().parent.parent / "dados"
 # Para conferir os nomes que existem de verdade:
 print([f.name for f in PASTA_DADOS.glob("*.csv")])
 
-df = pd.read_csv(PASTA_DADOS / "O_clara_bateria_20261118_155530.csv")
+df = pd.read_csv(PASTA_DADOS / "O_1_1_20261125_151552.csv")
 
 plt.figure(figsize=(8, 8))
 
