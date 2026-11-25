@@ -1,10 +1,10 @@
+import csv
+import re
+import time
+from datetime import datetime
+from pathlib import Path
 
 import serial
-import csv
-import time
-import re
-from pathlib import Path
-from datetime import datetime
 
 # Configurações da coleta
 PORTA = "COM4"       # Altere para a porta do seu ESP32
@@ -18,7 +18,7 @@ PASTA_DADOS.mkdir(parents=True, exist_ok=True)
 
 def limpar_nome(texto):
     """Remove caracteres inválidos para nomes de arquivos."""
-    return re.sub(r'[^a-zA-Z0-9_-]', '_', texto.strip())
+    return re.sub(r"[^a-zA-Z0-9_-]", "_", texto.strip())
 
 
 def coletar_amostra(ser, gesto, pessoa, objeto):
@@ -31,7 +31,6 @@ def coletar_amostra(ser, gesto, pessoa, objeto):
         f"{limpar_nome(objeto)}_"
         f"{data}.csv"
     )
-
     caminho = PASTA_DADOS / nome_arquivo
 
     linhas = []
@@ -48,9 +47,7 @@ def coletar_amostra(ser, gesto, pessoa, objeto):
 
     while time.monotonic() - inicio < DURACAO:
 
-        linha = ser.readline().decode(
-            "utf-8", errors="ignore"
-        ).strip()
+        linha = ser.readline().decode("utf-8", errors="ignore").strip()
 
         if not linha:
             continue
@@ -63,31 +60,33 @@ def coletar_amostra(ser, gesto, pessoa, objeto):
 
         try:
             tempo, d1, d2 = partes
-
-            tempo = int(tempo)
-            d1 = float(d1)
-            d2 = float(d2)
-
-            linhas.append([tempo, d1, d2])
-
+            linhas.append([int(tempo), float(d1), float(d2)])
         except ValueError:
             continue
 
-       # Salva os dados coletados
-        with open(caminho, "w", newline="", encoding="utf-8") as arquivo:
+    # ---- O salvamento fica FORA do while ----
+    # (antes ele estava dentro do loop e reescrevia o arquivo inteiro a cada
+    #  leitura, atrasando a leitura da serial)
+    if not linhas:
+        print("Nenhum dado recebido. Confira a porta e se o ESP32 está enviando.")
+        return
 
-            escritor = csv.writer(arquivo)
+    t0 = linhas[0][0]
 
-            escritor.writerow(
-                ["tempo_ms", "t_rel_ms", "d1", "d2", "gesto", "pessoa", "objeto"]
-            )
+    with open(caminho, "w", newline="", encoding="utf-8") as arquivo:
+        escritor = csv.writer(arquivo)
+        escritor.writerow(
+            ["tempo_ms", "t_rel_ms", "d1", "d2", "gesto", "pessoa", "objeto"]
+        )
+        for tempo, d1, d2 in linhas:
+            escritor.writerow([tempo, tempo - t0, d1, d2, gesto, pessoa, objeto])
 
-            t0 = linhas[0][0] if linhas else 0
-
-            for tempo, d1, d2 in linhas:
-                escritor.writerow(
-                    [tempo, tempo - t0, d1, d2, gesto, pessoa, objeto]
-                )
+    # Os dados ficam crus (-1 = falha do sensor); a limpeza é feita depois.
+    falhas = sum(1 for _, d1, d2 in linhas if d1 < 0 or d2 < 0)
+    print(
+        f"Salvo: {nome_arquivo} | {len(linhas)} leituras | "
+        f"{100 * falhas / len(linhas):.0f}% com alguma falha"
+    )
 
 
 def main():
@@ -99,26 +98,16 @@ def main():
     objeto = input("Objeto utilizado: ")
 
     try:
-        with serial.Serial(
-            PORTA,
-            BAUDRATE,
-            timeout=1
-        ) as ser:
+        with serial.Serial(PORTA, BAUDRATE, timeout=1) as ser:
 
             # Aguarda a inicialização da comunicação serial
             time.sleep(2)
             ser.reset_input_buffer()
 
             while True:
+                coletar_amostra(ser, gesto, pessoa, objeto)
 
-                coletar_amostra(
-                    ser, gesto, pessoa, objeto
-                )
-
-                continuar = input(
-                    "\nGravar outra amostra? (s/n): "
-                ).lower()
-
+                continuar = input("\nGravar outra amostra? (s/n): ").lower()
                 if continuar != "s":
                     break
 
